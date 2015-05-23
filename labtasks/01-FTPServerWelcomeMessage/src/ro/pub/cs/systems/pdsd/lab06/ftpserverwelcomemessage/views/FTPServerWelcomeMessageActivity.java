@@ -1,7 +1,13 @@
 package ro.pub.cs.systems.pdsd.lab06.ftpserverwelcomemessage.views;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.net.Socket;
+import java.net.UnknownHostException;
+
 import ro.pub.cs.systems.pdsd.lab06.ftpserverwelcomemessage.R;
 import ro.pub.cs.systems.pdsd.lab06.ftpserverwelcomemessage.general.Constants;
+import ro.pub.cs.systems.pdsd.lab06.ftpserverwelcomemessage.general.Utilities;
 import android.app.Activity;
 import android.os.Bundle;
 import android.util.Log;
@@ -21,22 +27,44 @@ public class FTPServerWelcomeMessageActivity extends Activity {
 		
 		@Override
 		public void run() {
-			try {
+			 try {
+				Socket socket = new Socket(FTPServerAddressEditText.getText().toString(),
+						Constants.FTP_PORT);
+				BufferedReader bufferedReader = Utilities.getReader(socket);
 				
-				// TODO: exercise 4
-				// open socket with FTPServerAddress (taken from FTPServerAddressEditText edit text) and port (Constants.FTP_PORT = 21)
-				// get the BufferedReader attached to the socket (call to the Utilities.getReader() method)
-				// should the line start with Constants.FTP_MULTILINE_START_CODE, the welcome message is processed
-				// read lines from server while 
-				// - the value is different from Constants.FTP_MULTILINE_END_CODE1
-				// - the value does not start with Constants.FTP_MULTILINE_START_CODE2
-				// append the line to the welcomeMessageTextView text view content (on the UI thread!!!)
-				// close the socket
-
-			} catch (Exception exception) {
-				Log.e(Constants.TAG, "An exception has occurred: "+exception.getMessage());
+				String message = bufferedReader.readLine();
+				
+				if(message.startsWith(Constants.FTP_MULTILINE_START_CODE)) {
+					
+					String line = bufferedReader.readLine();
+					while(!line.startsWith(Constants.FTP_MULTILINE_END_CODE2)) {
+						message += line;
+						line = bufferedReader.readLine();
+					}
+					
+					message += line;
+				}
+				
+				final String final_message = message;
+				
+				welcomeMessageTextView.post(new Runnable() {
+					@Override
+					public void run() {
+						welcomeMessageTextView.setText(final_message);
+					}
+				});
+				socket.close();
+			} catch (UnknownHostException unknownHostException) {
+				Log.e(Constants.TAG, "An exception has occurred: "
+						+ unknownHostException.getMessage());
 				if (Constants.DEBUG) {
-					exception.printStackTrace();
+					unknownHostException.printStackTrace();
+				}
+			} catch (IOException ioException) {
+				Log.e(Constants.TAG, "An exception has occurred: "
+						+ ioException.getMessage());
+				if (Constants.DEBUG) {
+					ioException.printStackTrace();
 				}
 			}
 		}

@@ -1,11 +1,13 @@
 package ro.pub.cs.systems.pdsd.lab06.clientservercommunication.views;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 
 import ro.pub.cs.systems.pdsd.lab06.clientservercommunication.R;
 import ro.pub.cs.systems.pdsd.lab06.clientservercommunication.general.Constants;
+import ro.pub.cs.systems.pdsd.lab06.clientservercommunication.general.Utilities;
 import android.app.Fragment;
 import android.os.Bundle;
 import android.text.Editable;
@@ -33,9 +35,10 @@ public class ServerFragment extends Fragment {
 		public void onTextChanged(CharSequence charSequence, int start, int before, int count) {
 			Log.v(Constants.TAG, "Text changed in edit text: "+charSequence.toString());
 			if (charSequence.toString().equals(Constants.SERVER_START)) {
+				Log.v(Constants.TAG, "Starting server...");
 				serverThread = new ServerThread();	
 				serverThread.startServer();
-				Log.v(Constants.TAG, "Starting server...");
+				
 			}
 			if (charSequence.toString().equals(Constants.SERVER_STOP)) {
 				serverThread.stopServer();
@@ -66,6 +69,9 @@ public class ServerFragment extends Fragment {
 				// - get the PrintWriter object in order to write on the socket (use Utilities.getWriter())
 				// - print a line containing the text in serverTextEditText edit text
 				
+				PrintWriter pw = Utilities.getWriter(socket);
+				pw.println(serverTextEditText.getText().toString());
+				
 				socket.close();
 
 			} catch (Exception exception) {
@@ -85,8 +91,8 @@ public class ServerFragment extends Fragment {
 		
 		public void startServer() {
 			isRunning = true;
-			start();
 			Log.v(Constants.TAG, "startServer() method invoked");
+			start();
 		}
 		
 		public void stopServer() {
@@ -137,6 +143,12 @@ public class ServerFragment extends Fragment {
 		
 		serverTextEditText = (EditText)getActivity().findViewById(R.id.server_text_edit_text);
 		serverTextEditText.addTextChangedListener(serverTextContentWatcher);
-	}	
+	}
+	
+	@Override
+	public void onDestroy() {
+	  super.onDestroy();
+	  serverThread.stopServer();
+	}
 	
 }

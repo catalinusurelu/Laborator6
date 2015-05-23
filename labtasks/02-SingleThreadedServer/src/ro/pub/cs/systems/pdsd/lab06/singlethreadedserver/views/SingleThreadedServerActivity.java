@@ -23,6 +23,42 @@ public class SingleThreadedServerActivity extends Activity {
 	
 	private ServerThread singleThreadedServer;
 	
+	private class CommunicationThread extends Thread {
+		  private Socket socket;
+		 
+		  public CommunicationThread(Socket socket) {
+		    this.socket = socket;
+		  }
+		 
+		  @Override
+		  public void run() {
+			  try {
+				  Thread.sleep(3000);
+				} catch (InterruptedException interruptedException) {
+				  Log.e(Constants.TAG, interruptedException.getMessage());
+				  if (Constants.DEBUG) {
+				    interruptedException.printStackTrace();
+				  }
+				}
+			
+			  try {
+				  Log.v(Constants.TAG, "Connection opened with "+socket.getInetAddress()+":"+socket.getLocalPort());
+				PrintWriter printWriter = Utilities.getWriter(socket);
+				printWriter.println(serverTextEditText.getText().toString());
+				socket.close();
+				Log.v(Constants.TAG, "Connection closed");
+				  
+			  } catch(IOException ioException) {
+	          Log.e(Constants.TAG, "An exception has occurred: "+ioException.getMessage());
+	          if (Constants.DEBUG) {
+	            ioException.printStackTrace();
+	          }
+	        }
+			
+		  }
+		}
+		 
+	
 	private ServerTextContentWatcher serverTextContentWatcher = new ServerTextContentWatcher();
 	private class ServerTextContentWatcher implements TextWatcher {
 
@@ -88,11 +124,9 @@ public class SingleThreadedServerActivity extends Activity {
 				serverSocket = new ServerSocket(Constants.SERVER_PORT);
 				while (isRunning) {
 					Socket socket = serverSocket.accept();
-					Log.v(Constants.TAG, "Connection opened with "+socket.getInetAddress()+":"+socket.getLocalPort());
-					PrintWriter printWriter = Utilities.getWriter(socket);
-					printWriter.println(serverTextEditText.getText().toString());
-					socket.close();
-					Log.v(Constants.TAG, "Connection closed");
+					new CommunicationThread(socket).start();
+					
+					
 				}
 			} catch (IOException ioException) {
 				Log.e(Constants.TAG, "An exception has occurred: "+ioException.getMessage());
@@ -129,5 +163,11 @@ public class SingleThreadedServerActivity extends Activity {
 			return true;
 		}
 		return super.onOptionsItemSelected(item);
+	}
+	
+	@Override
+	public void onDestroy() {
+	  super.onDestroy();
+	  singleThreadedServer.stopServer();
 	}
 }
